@@ -1,7 +1,14 @@
+#include <Wire.h>  
+#include <Adafruit_GFX.h>  
+#include <Adafruit_SSD1306.h>  
+
+#define SCREEN_WIDTH 128 
+#define SCREEN_HEIGHT 64 
+
 int pontos = 0;
-int tempo = 5000;        // TEMPO PADRÃO INICIAL LV.1
-int nivelMedio = 2500;   // TEMPO MÉDIO INICIAL LV.2
-int nivelDificil = 1000;  // TEMPO DIFÍCIL INICIAL LV.3
+int tempo = 1200;        // TEMPO PADRÃO INICIAL LV.1
+int nivelMedio = 1000;   // TEMPO MÉDIO INICIAL LV.2
+int nivelDificil = 800;  // TEMPO DIFÍCIL INICIAL LV.3
 
 int botaoPrecionado = 0;
 int botaoAtual = -1;     // VARIAVEL PARA ARMAZENAR BOTÃO A SER PRESSIONADO
@@ -25,6 +32,10 @@ int botaoVermelho = 5;
 int botaoAzul = 4;
 int botaoBranco = 3;
 int botaoDesligar = 2;
+int mensagem = 0;
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
 
 void setup() {
   Serial.begin(9600);
@@ -44,6 +55,15 @@ void setup() {
   pinMode(botaoBranco, INPUT_PULLUP);
   
   pinMode(botaoDesligar, INPUT_PULLUP); // BOTÃO DESLIGAR
+
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("Falha ao inicializar o OLED"));
+    while (1); 
+  }
+
+  display.clearDisplay();  // LIMPAR O DISPLAY
+  
 }
 
 void loop() {
@@ -55,17 +75,20 @@ void loop() {
 
   unsigned long currentMillis = millis();  // TEMPO ATUAL
   botaoIniciarPressionado = digitalRead(botaoDesligar);
+
+
   
   if(botaoIniciarPressionado == LOW){
+    tempo = 4000; 
     iniciarJogo();
   }
 
   // NIVEL DE DIFICULDADE DE ACORDO COM A PONTUAÇÃO
-  if (pontos > 10) {
+  if (pontos > 7) {
     tempo = nivelMedio;
   }
 
-  if (pontos > 25) {
+  if (pontos > 15) {
     tempo = nivelDificil;
   }
 
@@ -79,7 +102,7 @@ void loop() {
       ledAtual = rand() % tamanho;         // LED ALEATORIO
       digitalWrite(arrayLeds[ledAtual], HIGH);
       ledLigado = true;
-      Serial.println("LED aceso: " + String(arrayLeds[ledAtual]));
+      // Serial.println("LED aceso: " + String(arrayLeds[ledAtual]));
 
       botaoAtual = arrayBotoes[ledAtual];  // Define o botão correspondente
     }
@@ -93,6 +116,9 @@ void loop() {
     ledLigado = false;
     pontos++;                                
     Serial.println("Acertou! Pontos: " + String(pontos));
+
+     display.clearDisplay();
+     mostrarNaTela(String(pontos),3,15,6);
   }
 
   // APAGA LED AUTOMATICAMENTE SE NÃO FOR PRECIONADO
@@ -101,13 +127,32 @@ void loop() {
     digitalWrite(arrayLeds[ledAtual], LOW);
     ledLigado = false;
     Serial.println("Tempo esgotado! Fim de Jogokkk");
+    display.clearDisplay();
+    mostrarNaTela("TEMPO",45,15,2);
+    mostrarNaTela("ESGOTADO!",19,43,2);
+    delay(5000);
+    display.clearDisplay();
+
     pontos = 0;
     jogoIniciado = false;
   }
     
   }else{
-     Serial.println("VOCÊ PERDEU!");
+     Serial.println("INICIAR!");
+     mostrarNaTela("INICIAR",19,15,2);
+     mostrarNaTela("JOGO",36,43,2);
+
+
+    
   }
+}
+
+void mostrarNaTela(String texto,int w,int h,int ts) {
+  display.setTextSize(ts);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(w,h);
+  display.print(texto); 
+  display.display(); 
 }
 
 void iniciarJogo(){
